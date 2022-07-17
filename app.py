@@ -1,4 +1,6 @@
 import os
+import re
+from typing import Iterator, List, Union
 
 from flask import Flask, request, abort
 
@@ -8,13 +10,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
 
-def build_query(iter_query, cmd, val):
-    res = map(lambda x: x.strip(), iter_query)
+def build_query(iter_query: Iterator, cmd: str, val: Union[str, int]) -> List[Union[str, int]]:
+    res = list(map(lambda x: x.strip(), iter_query))
     if cmd == 'filter':
-        res = filter(lambda x: val in x, res)
+        res = list(filter(lambda x: val in x, res))
     if cmd == 'map':
         val = int(val)
-        res = map(lambda x: x.split()[val], res)
+        res = list(map(lambda x: x.split()[val], res))
     if cmd == 'unique':
         res = list(set(res))
     if cmd == 'sort':
@@ -23,7 +25,10 @@ def build_query(iter_query, cmd, val):
     if cmd == 'limit':
         val = int(val)
         res = list(res)[:val]
-    return res
+    if cmd == 'regex':
+        regex = re.compile(str(val))
+        res = list(filter(lambda x: regex.findall(x), (x for x in res)))
+    return list(res)
 
 
 @app.route("/perform_query")
